@@ -16,15 +16,15 @@ from app.parser import (
 DATA_PATH = Path(__file__).resolve().parents[1] / "data" / "sample_events.json"
 
 
-def test_parse_process_events_returns_182_normalized_records():
+def test_parse_process_events_returns_all_process_creation_records():
     with DATA_PATH.open("r", encoding="utf-8") as handle:
         events = json.load(handle)
 
     parsed = parse_process_events(events)
     raw_process_events = [event for event in events if event["event_id"] == 1]
 
-    assert len(parsed) == 182
-    assert len(raw_process_events) == 182
+    assert len(parsed) == 665
+    assert len(raw_process_events) == 665
     assert len(parsed) == len(raw_process_events)
 
     required_fields = {
@@ -55,15 +55,15 @@ def test_parse_events_parses_all_supported_event_types_and_preserves_order():
     parsed = parse_events(events)
 
     expected_counts = {
-        "process": 182,
-        "network": 64,
-        "file": 43,
-        "logon": 13,
-        "scheduled_task": 4,
+        "process": 665,
+        "network": 230,
+        "file": 141,
+        "logon": 18,
+        "scheduled_task": 6,
     }
 
-    assert len(parsed) == len(events)
-    assert len(parsed) == 306
+    assert len(parsed) == 1060
+    assert len(parsed) == sum(expected_counts.values())
     assert {record["event_type"] for record in parsed} == set(expected_counts)
 
     for event_type, count in expected_counts.items():
@@ -222,8 +222,9 @@ def test_parse_events_skips_unsupported_ids_and_does_not_modify_input():
 
     original_copy = copy.deepcopy(events)
     parsed = parse_events([{"event_id": 999, "value": "unsupported"}, *events])
+    expected_supported_events = [event for event in events if event["event_id"] in {1, 3, 11, 4624, 4625, 4698}]
 
-    assert len(parsed) == len(events)
+    assert len(parsed) == len(expected_supported_events)
     assert parsed[0]["event_type"] == "process"
     assert events == original_copy
 

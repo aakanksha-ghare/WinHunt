@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+SUPPORTED_EVENT_IDS = {1, 3, 11, 4624, 4625, 4698}
+
 
 def normalize_process_event(event: dict[str, Any]) -> dict[str, Any]:
     """Return a normalized dictionary for a Windows process creation event."""
@@ -72,31 +74,42 @@ def normalize_scheduled_task_event(event: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def normalize_event(event: dict[str, Any]) -> dict[str, Any]:
+    """Dispatch to the correct synthetic normalizer for a supported event."""
+    event_id = event.get("event_id")
+
+    if event_id == 1:
+        record = normalize_process_event(event)
+        record["event_type"] = "process"
+        return record
+    if event_id == 3:
+        record = normalize_network_event(event)
+        record["event_type"] = "network"
+        return record
+    if event_id == 11:
+        record = normalize_file_event(event)
+        record["event_type"] = "file"
+        return record
+    if event_id in {4624, 4625}:
+        record = normalize_logon_event(event)
+        record["event_type"] = "logon"
+        return record
+    if event_id == 4698:
+        record = normalize_scheduled_task_event(event)
+        record["event_type"] = "scheduled_task"
+        return record
+
+    raise ValueError(f"Unsupported event_id: {event_id}")
+
+
 def parse_events(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Normalize all supported telemetry event types while preserving source order."""
     normalized_events: list[dict[str, Any]] = []
 
     for event in events:
         event_id = event.get("event_id")
-        if event_id == 1:
-            record = normalize_process_event(event)
-            record["event_type"] = "process"
-        elif event_id == 3:
-            record = normalize_network_event(event)
-            record["event_type"] = "network"
-        elif event_id == 11:
-            record = normalize_file_event(event)
-            record["event_type"] = "file"
-        elif event_id in {4624, 4625}:
-            record = normalize_logon_event(event)
-            record["event_type"] = "logon"
-        elif event_id == 4698:
-            record = normalize_scheduled_task_event(event)
-            record["event_type"] = "scheduled_task"
-        else:
-            continue
-
-        normalized_events.append(record)
+        if event_id in SUPPORTED_EVENT_IDS:
+            normalized_events.append(normalize_event(event))
 
     return normalized_events
 

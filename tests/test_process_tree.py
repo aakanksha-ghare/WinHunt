@@ -17,8 +17,8 @@ def test_build_process_tree_reconstructs_all_normalized_process_records():
     original_records = deepcopy(process_events)
     tree = build_process_tree(process_events)
 
-    assert len(process_events) == 182
-    assert len(tree["by_pid"]) == 182
+    assert len(process_events) == 665
+    assert len(tree["by_pid"]) == 665
     assert set(tree["by_pid"].keys()) == {record["pid"] for record in process_events}
 
     for record in process_events:
