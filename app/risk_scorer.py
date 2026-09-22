@@ -23,6 +23,7 @@ class RiskScorer:
     )
 
     BEHAVIORAL_BONUSES = {
+        "after_hours": 10,
         "after_hours_activity": 10,
         "first_seen_process": 15,
         "process_frequency_anomaly": 15,
@@ -73,8 +74,18 @@ class RiskScorer:
         return "low"
 
     @classmethod
+    def _canonical_factor_name(cls, factor_name: str) -> str:
+        name = str(factor_name).strip().lower()
+        aliases = {
+            "after_hours_activity": "after_hours",
+        }
+        return aliases.get(name, name)
+
+    @classmethod
     def _finding_type_hint(cls, finding_type: str) -> str:
         type_name = str(finding_type).strip().lower()
+        if "after_hours" in type_name:
+            return cls._canonical_factor_name(type_name)
         if "encoded" in type_name and "powershell" in type_name:
             return "encoded_powershell"
         if "office" in type_name and "powershell" in type_name:
@@ -83,7 +94,7 @@ class RiskScorer:
             return "suspicious_executable_location"
         if "scheduled" in type_name and "task" in type_name:
             return "scheduled_task_creation"
-        return type_name
+        return cls._canonical_factor_name(type_name)
 
     @classmethod
     def _evidence_value(cls, evidence: Any, *keys: str) -> Any:
@@ -100,6 +111,19 @@ class RiskScorer:
             "points": score,
             "reason": f"{severity.title()}-severity detection",
         }
+
+    def _deduplicate_factors(self, factors: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        deduplicated: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for factor in factors:
+            factor_name = self._canonical_factor_name(factor.get("factor", ""))
+            if not factor_name or factor_name in seen:
+                continue
+            seen.add(factor_name)
+            canonical_factor = dict(factor)
+            canonical_factor["factor"] = factor_name
+            deduplicated.append(canonical_factor)
+        return deduplicated
 
     def _behavioral_factors(self, finding: dict[str, Any]) -> list[dict[str, Any]]:
         factors: list[dict[str, Any]] = []
@@ -142,20 +166,12 @@ class RiskScorer:
                 }
             )
 
-        # Mitigate duplicate counting for the same concept when an indicator is already represented by the type.
-        seen = set()
-        deduplicated: list[dict[str, Any]] = []
-        for factor in factors:
-            key = (factor["factor"], factor["points"], factor["reason"])
-            if key in seen:
-                continue
-            seen.add(key)
-            deduplicated.append(factor)
-        return deduplicated
+        return self._deduplicate_factors(factors)
 
     @staticmethod
     def _behavioral_reason(factor: str) -> str:
         mapping = {
+            "after_hours": "Activity occurred outside historical user hours",
             "after_hours_activity": "Activity occurred outside historical user hours",
             "first_seen_process": "Process had not been observed in the historical baseline",
             "process_frequency_anomaly": "Process frequency exceeded historical cadence",
@@ -223,15 +239,7 @@ class RiskScorer:
                     }
                 )
 
-        deduplicated: list[dict[str, Any]] = []
-        seen = set()
-        for factor in factors:
-            key = (factor["factor"], factor["points"], factor["reason"])
-            if key in seen:
-                continue
-            seen.add(key)
-            deduplicated.append(factor)
-        return deduplicated
+        return self._deduplicate_factors(factors)
 
     @staticmethod
     def _rule_reason(factor: str) -> str:
