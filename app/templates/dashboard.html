@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WinHunt Dashboard</title>
+    <style>
+      :root {
+        --bg: #07111b;
+        --panel: #0d1b2a;
+        --panel-alt: #101f2f;
+        --panel-soft: #13263c;
+        --line: rgba(148, 163, 184, 0.18);
+        --text: #e5edf7;
+        --muted: #9eb3c7;
+        --accent: #4fd1c5;
+        --critical: #ff5f7a;
+        --high: #ff9f43;
+        --medium: #ffd166;
+        --low: #53d769;
+        --info: #70b7ff;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(180deg, #050d16 0%, #0b1523 100%);
+        color: var(--text);
+      }
+
+      .page {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 32px 20px 48px;
+      }
+
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        padding: 18px 22px;
+        border: 1px solid var(--line);
+        background: rgba(15, 23, 42, 0.85);
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+      }
+
+      .brand-block {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .brand {
+        font-size: clamp(1.7rem, 2vw, 2.5rem);
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .subtitle {
+        color: var(--muted);
+        font-size: 0.9rem;
+        letter-spacing: 0.04em;
+      }
+
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 14px;
+        background: rgba(79, 209, 197, 0.08);
+        border: 1px solid rgba(79, 209, 197, 0.35);
+        border-radius: 999px;
+        color: var(--accent);
+        font-size: 0.83rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 0 10px rgba(79, 209, 197, 0.9);
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(200px, 1fr));
+        gap: 18px;
+        margin-top: 24px;
+      }
+
+      .card {
+        background: linear-gradient(180deg, rgba(19, 38, 60, 0.98), rgba(11, 20, 31, 0.96));
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 18px 20px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      }
+
+      .card-label {
+        color: var(--muted);
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.09em;
+        margin-bottom: 12px;
+      }
+
+      .stat-value {
+        font-size: clamp(1.8rem, 2.1vw, 2.6rem);
+        font-weight: 700;
+        line-height: 1.1;
+      }
+
+      .stat-accent {
+        color: var(--accent);
+      }
+
+      .stat-critical { color: var(--critical); }
+      .stat-high { color: var(--high); }
+      .stat-medium { color: var(--medium); }
+      .stat-low { color: var(--low); }
+
+      .severity-panel {
+        margin-top: 20px;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(150px, 1fr));
+        gap: 14px;
+      }
+
+      .severity-box {
+        padding: 14px 16px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: rgba(9, 16, 25, 0.72);
+      }
+
+      .severity-box .label {
+        display: block;
+        color: var(--muted);
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+      }
+
+      .severity-box .count {
+        font-weight: 700;
+        font-size: 1.4rem;
+      }
+
+      section {
+        margin-top: 28px;
+      }
+
+      h2 {
+        margin: 0 0 16px;
+        font-size: clamp(1.2rem, 1.7vw, 1.8rem);
+        color: var(--text);
+        letter-spacing: 0.04em;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: rgba(10, 20, 32, 0.8);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 900px;
+      }
+
+      th, td {
+        text-align: left;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+      }
+
+      th {
+        background: rgba(15, 29, 43, 0.8);
+        color: var(--muted);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      tbody tr:hover {
+        background: rgba(112, 183, 255, 0.04);
+      }
+
+      .risk-badge {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        border: 1px solid transparent;
+      }
+
+      .risk-critical {
+        background: rgba(255, 95, 122, 0.14);
+        color: var(--critical);
+        border-color: rgba(255, 95, 122, 0.35);
+      }
+
+      .risk-high {
+        background: rgba(255, 159, 67, 0.12);
+        color: var(--high);
+        border-color: rgba(255, 159, 67, 0.35);
+      }
+
+      .risk-medium {
+        background: rgba(255, 209, 102, 0.12);
+        color: var(--medium);
+        border-color: rgba(255, 209, 102, 0.35);
+      }
+
+      .risk-low {
+        background: rgba(83, 215, 105, 0.12);
+        color: var(--low);
+        border-color: rgba(83, 215, 105, 0.35);
+      }
+
+      .risk-unknown {
+        background: rgba(112, 183, 255, 0.09);
+        color: var(--info);
+        border-color: rgba(112, 183, 255, 0.26);
+      }
+
+      .score {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
+
+      .mitre-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .mitre-item {
+        padding: 8px 10px;
+        border-radius: 8px;
+        background: rgba(112, 183, 255, 0.06);
+        border: 1px solid rgba(112, 183, 255, 0.18);
+        line-height: 1.5;
+      }
+
+      .mitre-id {
+        display: block;
+        font-weight: 700;
+        color: var(--info);
+      }
+
+      .mitre-name {
+        color: var(--text);
+        font-size: 0.88rem;
+      }
+
+      .empty {
+        padding: 18px 20px;
+        border: 1px dashed var(--line);
+        border-radius: 10px;
+        color: var(--muted);
+        background: rgba(12, 20, 28, 0.6);
+      }
+
+      .evidence-block {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        max-width: 340px;
+      }
+
+      .evidence-item {
+        display: flex;
+        gap: 8px;
+        font-size: 0.86rem;
+        line-height: 1.45;
+      }
+
+      .evidence-key {
+        color: var(--muted);
+        white-space: nowrap;
+      }
+
+      .chain-card {
+        border: 1px solid var(--line);
+        background: rgba(12, 22, 33, 0.8);
+        border-radius: 12px;
+        padding: 18px 20px;
+        margin-bottom: 18px;
+      }
+
+      .chain-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        flex-wrap: wrap;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .chain-header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+      }
+
+      .meta-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(140px, 1fr));
+        gap: 10px 18px;
+        margin-top: 10px;
+      }
+
+      .meta-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .meta-label {
+        font-size: 0.7rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .meta-value {
+        font-weight: 600;
+      }
+
+      .chain-body {
+        margin-top: 16px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(220px, 1fr));
+        gap: 16px;
+      }
+
+      .chain-section {
+        padding: 14px 16px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: rgba(12, 19, 28, 0.85);
+      }
+
+      .chain-section h4 {
+        margin: 0 0 10px;
+        font-size: 0.88rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .pill-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 0.76rem;
+        background: rgba(79, 209, 197, 0.08);
+        border: 1px solid rgba(79, 209, 197, 0.25);
+        color: var(--accent);
+      }
+
+      .action-link {
+        display: inline-block;
+        padding: 7px 12px;
+        border: 1px solid rgba(79, 209, 197, 0.35);
+        border-radius: 8px;
+        background: rgba(79, 209, 197, 0.06);
+        color: var(--accent);
+        text-decoration: none;
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        transition: background-color 0.15s ease, border-color 0.15s ease;
+      }
+
+      .action-link:hover {
+        background: rgba(79, 209, 197, 0.12);
+        border-color: rgba(79, 209, 197, 0.6);
+      }
+
+      .chain-findings {
+        margin-top: 18px;
+      }
+
+      .nested-table {
+        min-width: 100%;
+      }
+
+      .filed-note {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      footer {
+        margin-top: 30px;
+        padding-top: 18px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        text-align: center;
+        font-size: 0.82rem;
+      }
+
+      @media (max-width: 960px) {
+        .summary-grid {
+          grid-template-columns: repeat(2, minmax(180px, 1fr));
+        }
+
+        .severity-panel {
+          grid-template-columns: repeat(2, minmax(120px, 1fr));
+        }
+      }
+
+      @media (max-width: 640px) {
+        .page {
+          padding: 18px 12px 36px;
+        }
+
+        .topbar {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .summary-grid,
+        .severity-panel,
+        .chain-body {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar" aria-label="WinHunt header">
+        <div class="brand-block">
+          <div class="brand">WinHunt</div>
+          <div class="subtitle">Windows Threat Hunting &amp; Incident Analysis Platform</div>
+        </div>
+        <div class="status-pill">
+          <span class="dot" aria-hidden="true"></span>
+          Analysis: Sample Telemetry
+        </div>
+      </header>
+
+      <section aria-label="Summary overview">
+        <div class="summary-grid">
+          <div class="card">
+            <div class="card-label">Events</div>
+            <div class="stat-value stat-accent">{{ summary.get('event_count', 0) }}</div>
+          </div>
+
+          <div class="card">
+            <div class="card-label">Findings</div>
+            <div class="stat-value stat-high">{{ summary.get('finding_count', 0) }}</div>
+          </div>
+
+          <div class="card">
+            <div class="card-label">Investigation Chains</div>
+            <div class="stat-value stat-medium">{{ summary.get('chain_count', 0) }}</div>
+          </div>
+
+          <div class="card">
+            <div class="card-label">Critical Findings</div>
+            <div class="stat-value stat-critical">{{ summary.get('severity_counts', {}).get('critical', 0) }}</div>
+          </div>
+        </div>
+
+        <div class="severity-panel" aria-label="Severity breakdown">
+          <div class="severity-box">
+            <span class="label">Critical</span>
+            <span class="count stat-critical">{{ summary.get('severity_counts', {}).get('critical', 0) }}</span>
+          </div>
+          <div class="severity-box">
+            <span class="label">High</span>
+            <span class="count stat-high">{{ summary.get('severity_counts', {}).get('high', 0) }}</span>
+          </div>
+          <div class="severity-box">
+            <span class="label">Medium</span>
+            <span class="count stat-medium">{{ summary.get('severity_counts', {}).get('medium', 0) }}</span>
+          </div>
+          <div class="severity-box">
+            <span class="label">Low</span>
+            <span class="count stat-low">{{ summary.get('severity_counts', {}).get('low', 0) }}</span>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="findings-section">
+        <h2 id="findings-section">Detection &amp; Behavioral Findings</h2>
+
+        {% if findings %}
+          <div class="table-wrap">
+            <table aria-label="Detection findings table">
+              <thead>
+                <tr>
+                  <th>Risk</th>
+                  <th>Finding</th>
+                  <th>Type</th>
+                  <th>Description</th>
+                  <th>MITRE ATT&amp;CK</th>
+                  <th>Evidence</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for finding in findings %}
+                  <tr>
+                    <td>
+                      {% set risk_level = (finding.get('risk_level', 'unknown') or 'unknown') | upper %}
+                      {% set risk_score = finding.get('risk_score') %}
+                      <span class="risk-badge risk-{{ (risk_level | lower) if risk_level and risk_level != 'UNKNOWN' else 'unknown' }}">
+                        {{ risk_level }}
+                      </span>
+                      {% if risk_score is not none and risk_score != '' %}
+                        <span class="score">{{ risk_score }}</span>
+                      {% endif %}
+                    </td>
+
+                    <td>
+                      {{ finding.get('title') or finding.get('finding_type') or 'Untitled finding' }}
+                    </td>
+
+                    <td>{{ finding.get('finding_type', 'Unknown') }}</td>
+
+                    <td>
+                      {{ finding.get('description', 'No description provided.') }}
+                    </td>
+
+                    <td>
+                      {% set finding_mitre = finding.get('mitre', []) %}
+                      {% if finding_mitre %}
+                        <div class="mitre-list">
+                          {% for entry in finding_mitre %}
+                            {% if entry is mapping %}
+                              {% set technique_id = entry.get('technique_id', '') %}
+                              {% set technique_name = entry.get('technique_name', '') %}
+                              {% if technique_id or technique_name %}
+                                <div class="mitre-item">
+                                  {% if technique_id %}
+                                    <span class="mitre-id">{{ technique_id }}</span>
+                                  {% endif %}
+                                  {% if technique_name %}
+                                    <span class="mitre-name">{{ technique_name }}</span>
+                                  {% endif %}
+                                </div>
+                              {% endif %}
+                            {% endif %}
+                          {% endfor %}
+                        </div>
+                      {% else %}
+                        Not mapped
+                      {% endif %}
+                    </td>
+
+                    <td>
+                      {% set evidence = finding.get('evidence', {}) %}
+                      {% if evidence %}
+                        {% if evidence is mapping %}
+                          <div class="evidence-block">
+                            {% for key, value in evidence.items() %}
+                              {% if loop.index <= 4 %}
+                                <div class="evidence-item">
+                                  <span class="evidence-key">{{ key }}:</span>
+                                  <span>{{ value }}</span>
+                                </div>
+                              {% endif %}
+                            {% endfor %}
+                          </div>
+                        {% else %}
+                          {{ evidence }}
+                        {% endif %}
+                      {% else %}
+                        No evidence details
+                      {% endif %}
+                    </td>
+
+                    <td>
+                      <a class="action-link" href="{{ url_for('investigation.investigation', finding_index=loop.index0) }}">Investigate</a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="empty">No findings detected.</div>
+        {% endif %}
+      </section>
+
+      <section aria-labelledby="chains-section">
+        <h2 id="chains-section">Correlated Investigation Chains</h2>
+
+        {% if chains %}
+          {% for chain in chains %}
+            <article class="chain-card" aria-label="Investigation chain details">
+              <div class="chain-header">
+                <div>
+                  <h3>{{ chain.get('chain_id', 'Unnamed chain') }}</h3>
+                  <div class="meta-grid">
+                    <div class="meta-item">
+                      <span class="meta-label">Start</span>
+                      <span class="meta-value">{{ chain.get('start_time', 'Unknown') }}</span>
+                    </div>
+                    <div class="meta-item">
+                      <span class="meta-label">End</span>
+                      <span class="meta-value">{{ chain.get('end_time', 'Unknown') }}</span>
+                    </div>
+                    <div class="meta-item">
+                      <span class="meta-label">Duration</span>
+                      <span class="meta-value">{{ chain.get('duration_seconds', 'Unknown') }}s</span>
+                    </div>
+                    <div class="meta-item">
+                      <span class="meta-label">Findings</span>
+                      <span class="meta-value">{{ chain.get('finding_count', 0) }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="meta-grid">
+                  <div class="meta-item">
+                    <span class="meta-label">Host</span>
+                    <span class="meta-value">{{ chain.get('host', 'Unknown') }}</span>
+                  </div>
+                  <div class="meta-item">
+                    <span class="meta-label">Users</span>
+                    <span class="meta-value">
+                      {% set users = chain.get('users', []) %}
+                      {% if users %}
+                        {{ users | join(', ') }}
+                      {% else %}
+                        Unknown
+                      {% endif %}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="chain-body">
+                <div class="chain-section">
+                  <h4>Correlation Reasons</h4>
+                  {% set reasons = chain.get('correlation_reasons', []) %}
+                  {% if reasons %}
+                    <div class="pill-list">
+                      {% for reason in reasons %}
+                        <span class="pill">{{ reason }}</span>
+                      {% endfor %}
+                    </div>
+                  {% else %}
+                    <div class="filed-note">No correlation reasons recorded.</div>
+                  {% endif %}
+                </div>
+
+                <div class="chain-section">
+                  <h4>MITRE ATT&amp;CK</h4>
+                  {% set chain_mitre = chain.get('mitre', []) %}
+                  {% if chain_mitre %}
+                    <div class="mitre-list">
+                      {% for entry in chain_mitre %}
+                        {% if entry is mapping %}
+                          {% set technique_id = entry.get('technique_id', '') %}
+                          {% set technique_name = entry.get('technique_name', '') %}
+                          {% if technique_id or technique_name %}
+                            <div class="mitre-item">
+                              {% if technique_id %}
+                                <span class="mitre-id">{{ technique_id }}</span>
+                              {% endif %}
+                              {% if technique_name %}
+                                <span class="mitre-name">{{ technique_name }}</span>
+                              {% endif %}
+                            </div>
+                          {% endif %}
+                        {% endif %}
+                      {% endfor %}
+                    </div>
+                  {% else %}
+                    <div class="filed-note">No technique mapping recorded.</div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="chain-findings">
+                {% set chain_findings = chain.get('findings', []) %}
+                {% if chain_findings %}
+                  <div class="table-wrap">
+                    <table class="nested-table" aria-label="Chain finding details">
+                      <thead>
+                        <tr>
+                          <th>Finding</th>
+                          <th>Type</th>
+                          <th>Risk</th>
+                          <th>Score</th>
+                          <th>Timestamp</th>
+                          <th>MITRE</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for item in chain_findings %}
+                          <tr>
+                            <td>{{ item.get('title') or item.get('finding_type') or 'Untitled finding' }}</td>
+                            <td>{{ item.get('finding_type', 'Unknown') }}</td>
+                            <td>
+                              {% set item_risk = (item.get('risk_level', 'unknown') or 'unknown') | upper %}
+                              <span class="risk-badge risk-{{ (item_risk | lower) if item_risk and item_risk != 'UNKNOWN' else 'unknown' }}">
+                                {{ item_risk }}
+                              </span>
+                            </td>
+                            <td>{{ item.get('risk_score', 'N/A') }}</td>
+                            <td>{{ item.get('timestamp', item.get('time', '-')) }}</td>
+                            <td>
+                              {% set item_mitre = item.get('mitre', []) %}
+                              {% if item_mitre %}
+                                {% for entry in item_mitre %}
+                                  {% if entry is mapping %}
+                                    {% set item_technique = entry.get('technique_id', '') %}
+                                    {% if item_technique %}
+                                      {{ item_technique }}{% if not loop.last %}<br />{% endif %}
+                                    {% endif %}
+                                  {% endif %}
+                                {% endfor %}
+                              {% else %}
+                                -
+                              {% endif %}
+                            </td>
+                          </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                {% else %}
+                  <div class="empty">No findings included in this chain.</div>
+                {% endif %}
+              </div>
+            </article>
+          {% endfor %}
+        {% else %}
+          <div class="empty">No correlated investigation chains.</div>
+        {% endif %}
+      </section>
+
+      <footer>
+        WinHunt • Windows Threat Hunting &amp; Incident Analysis
+      </footer>
+    </div>
+  </body>
+</html>

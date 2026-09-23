@@ -1,17 +1,22 @@
-"""WinHunt application package exports."""
+"""WinHunt Flask application package.
 
-from .auth_persistence_hunter import (
-    AuthPersistenceHunter,
-    detect_auth_persistence,
-    detect_auth_persistence_events,
-    hunt_auth_persistence,
-    scan_auth_persistence,
-)
+This package provides the Flask application factory for the WinHunt platform.
+"""
 
-__all__ = [
-    "AuthPersistenceHunter",
-    "detect_auth_persistence",
-    "detect_auth_persistence_events",
-    "hunt_auth_persistence",
-    "scan_auth_persistence",
-]
+from flask import Flask
+
+from app.routes.dashboard import dashboard_bp
+from app.routes.investigation import investigation_bp
+
+
+def create_app() -> Flask:
+    """Create and return a Flask application instance."""
+    app = Flask(__name__)
+    app.config.setdefault("JSON_SORT_KEYS", False)
+    app.config.setdefault("TESTING", False)
+    app.register_blueprint(dashboard_bp)
+    app.register_blueprint(investigation_bp)
+    return app
+
+
+__all__ = ["create_app"]
