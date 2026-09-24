@@ -45,7 +45,24 @@ def _load_sample_events() -> list[dict[str, Any]]:
     return payload
 
 
-def _is_same_finding(candidate: dict[str, Any], reference: dict[str, Any]) -> bool:
+def _normalize_finding_type(value: Any) -> str:
+    """Normalize missing or placeholder finding_type values for safe comparison."""
+    if value is None:
+        return "unknown"
+
+    if isinstance(value, str):
+        normalized = value.strip()
+        if not normalized or normalized.lower() == "unknown":
+            return "unknown"
+        return normalized
+
+    return value
+
+
+def _is_same_finding(
+    candidate: dict[str, Any],
+    reference: dict[str, Any],
+) -> bool:
     """Return True when two finding dictionaries represent the same finding."""
     if candidate is reference:
         return True
@@ -53,26 +70,38 @@ def _is_same_finding(candidate: dict[str, Any], reference: dict[str, Any]) -> bo
     for key in ("finding_id", "id"):
         candidate_value = candidate.get(key)
         reference_value = reference.get(key)
+
         if candidate_value is not None and reference_value is not None:
             if candidate_value == reference_value:
                 return True
 
-    candidate_signature = {
-        key: candidate.get(key)
-        for key in ("title", "finding_type", "description")
-        if key in candidate and candidate.get(key) is not None
-    }
-    reference_signature = {
-        key: reference.get(key)
-        for key in ("title", "finding_type", "description")
-        if key in reference and reference.get(key) is not None
-    }
+    def canonicalize(record: dict[str, Any]) -> dict[str, Any]:
+        normalized: dict[str, Any] = {}
 
-    if candidate_signature and candidate_signature == reference_signature:
-        return True
+        for key, value in record.items():
+            # Correlation normalization may add optional fields as None.
+            # Treat an absent field and an explicit None as equivalent.
+            if value is None:
+                continue
 
-    return candidate == reference
+            if key == "finding_type":
+                if isinstance(value, str):
+                    text = value.strip()
+                    if not text or text.lower() == "unknown":
+                        normalized[key] = "unknown"
+                    else:
+                        normalized[key] = text
+                else:
+                    normalized[key] = value
+            else:
+                normalized[key] = value
 
+        if "finding_type" not in normalized:
+            normalized["finding_type"] = "unknown"
+
+        return normalized
+
+    return canonicalize(candidate) == canonicalize(reference)
 
 @investigation_bp.get("/investigate/<int:finding_index>")
 def investigation(finding_index: int) -> str:
