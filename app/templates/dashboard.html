@@ -527,6 +527,26 @@
           border-color 0.15s ease;
       }
 
+      .hunt-link {
+  display: inline-block;
+  padding: 9px 14px;
+  border: 1px solid rgba(79, 209, 197, 0.35);
+  border-radius: 999px;
+  background: rgba(79, 209, 197, 0.06);
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.hunt-link:hover {
+  background: rgba(79, 209, 197, 0.12);
+  border-color: rgba(79, 209, 197, 0.6);
+}
+
       .action-link:hover {
         background: rgba(79, 209, 197, 0.12);
         border-color: rgba(79, 209, 197, 0.6);
@@ -596,18 +616,27 @@
   <body>
     <div class="page">
       <header class="topbar" aria-label="WinHunt header">
-        <div class="brand-block">
-          <div class="brand">WinHunt</div>
-          <div class="subtitle">
-            Windows Threat Hunting &amp; Incident Analysis Platform
-          </div>
-        </div>
+  <div class="brand-block">
+    <div class="brand">WinHunt</div>
+    <div class="subtitle">
+      Windows Threat Hunting &amp; Incident Analysis Platform
+    </div>
+  </div>
 
-        <div class="status-pill">
-          <span class="dot" aria-hidden="true"></span>
-          Analysis: Sample Telemetry
-        </div>
-      </header>
+  <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+    <a
+      class="hunt-link"
+      href="{{ url_for('hunting.hunting') }}"
+    >
+      Threat Hunting
+    </a>
+
+    <div class="status-pill">
+      <span class="dot" aria-hidden="true"></span>
+      Analysis: Sample Telemetry
+    </div>
+  </div>
+</header>
 
       <section aria-label="Summary overview">
         <div class="summary-grid">
